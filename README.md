@@ -55,8 +55,8 @@ To read in **compressed** fasta/fastq files, it could be necessary to install zl
 sudo apt install libz-dev
 ```
 
-In addition, there are some **optional** features:
-* To read in a **colored de Bruijn graph**, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost).
+**Optional**:
+* To read in a colored de Bruijn graph, SANS uses the API of [Bifrost](https://github.com/pmelsted/bifrost).
 * To convert the output into NEXUS format, the provided script requires Python 3.
 * To visualize the splits, we recommend the tool [SplitsTree (version 4)](https://uni-tuebingen.de/fakultaeten/mathematisch-naturwissenschaftliche-fakultaet/fachbereiche/informatik/lehrstuehle/algorithms-in-bioinformatics/software/splitstree).
 
@@ -150,6 +150,9 @@ To assess the robustness of reconstructed splits with respect to noise in the in
 
 To generate a consensus tree from bootstrapped trees, use `-f tree -b 1000 -C`. 
 To generate a consensus network from bootstrapped trees, use `-f tree -b 1000 -C weakly`. 
+To filter out low support splits, add a threshold using `-b 1000 0.75`.
+
+
 See usage information (`SANS --help`) for further options.
 
 
@@ -254,31 +257,16 @@ For estimating the reconstruction accuracy, the (weighted) F1 score has been det
 
 Further information on the datasets can be found in the initial publication of SANS (Wittler, 2019), see above.
 
-### *Salmonella enterica* Para C
-220 genomes, k=31
+- *Salmonella enterica* Para C, 220 genomes, k=31
+- *Salmonella enterica* subspecies enterica, 2964 genomes, k=21
 
-| Preprocessing | Running time <br> pre-processing | Running time <br>SANS | Running time both <br>(parall. pre-proc.,<br> factor 16) | F1-Score <br> (weighted) |
+| Preprocessing | Para C <br> F1-Score | Para C <br> weighted F1 | Enterica <br> F1-Score | Enterica <br> weighted F1 |
 |:--|--:|--:|--:|--:|
-| none (whole genome) | -- | **610s** | -- | **0.878 <br> (0.999)** |
-| Getorf (-find 0) | 247s | 459s | 706s <br> (474s) | 0.881 <br> (0.999) |
-| Getorf (-find 1) | 199s | 339s | 538s <br> (351s) | 0.868 <br> (0.999) |
-| ORFfinder | 5195s | 166s | 5361s <br> (491s) | 0.858 <br> (0.997) |
-| Prodigal | 6292s | 134s | 6326s <br> (521s) |0.853 <br> (0.998)  |
-
-### *Salmonella enterica* subspecies enterica
-2964 genomes, k=21
-
-| Preprocessing | Running time <br> pre-processing | Running time <br>SANS | Running time both <br>(parall. pre-proc.,<br> factor 16) | F1-Score <br> (weighted) |
-|:--|--:|--:|--:|--:|
-| none (whole genome) | -- | **190min** | -- | **0.587 <br> (0.792)** |
-| Getorf (-find 0) | 55min | 220min | 274min <br> (223min) | 0.624 <br> (0.807) |
-| Getorf (-find 1) | 48min | 165min | 213min <br> (168min) | 0.620 <br> (0.799) |
-| ORFfinder | 1621min | 78min | 1698min <br> (179min) | 0.594 <br> (0.766) |
-| Prodigal | 1322min | 50min | 1372min <br> (133min) |0.587 <br> (0.792)  |
-
-
-
-
+| none (whole genome) |  **0.878** | **0.999** |**0.587** | **0.792** |
+| Getorf (-find 0) | 0.881 | 0.999 | 0.624 | 0.807 | 
+| Getorf (-find 1) | 0.868 | 0.999 | 0.620 | 0.799 |
+| ORFfinder |        0.858 | 0.997 | 0.594 | 0.766 |
+| Prodigal |         0.853 | 0.998 | 0.587 | 0.792 |
 
 
 ## Clustering / dereplication of metagenome assembled genomes (MAGs)
