@@ -320,7 +320,7 @@ purity := TP / (TP + FP)
 
 completeness := TP / (TP +  FN)
 
-These per-cluster measures were then averaged (weighted and unweighted). The following table shows the results for the different input and clustering settings.
+These per-cluster measures were then averaged (weighted and unweighted). The following table shows the results for the different input and clustering settings. (The running times are out-dated!)
 
 | Input | Setting | Running time | Memory | average purity<br>(weighted) | average completeness<br>(weighted) |
 |:--|:--|--:|--:|--:|--:|
@@ -348,8 +348,8 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
 * The sparse-map library is licensed under the [MIT license](https://github.com/Tessil/sparse-map/blob/master/LICENSE).
 * The Bifrost library is licensed under the [BSD-2 license](https://github.com/pmelsted/bifrost/blob/master/LICENSE).
-* SANS uses gzstream, licensed under the [LGPL license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/src/gz/COPYING.LIB)
-* SANS is licensed under the [GNU general public license](https://gitlab.ub.uni-bielefeld.de/gi/sans/blob/master/LICENSE).
+* SANS uses gzstream, licensed under the [LGPL license](/src/gz/COPYING.LIB).
+* SANS is licensed under the [GNU general public license](/LICENSE).
 
 ## Privacy
 
