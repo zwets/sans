@@ -1,5 +1,7 @@
 # MAX. K-MER LENGTH, NUMBER OF FILES
 CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=64 -std=c++14
+# Zwets: bump maxN to 240 sequences
+CC = g++ -O3 -march=native -DmaxK=32 -DmaxN=240 -std=c++14
 XX = -lpthread -lz
 
 ## IF DEBUG
