@@ -1,4 +1,4 @@
-# SANS ambages
+# SANS ambages <img src="SANS-logo_100.png" style="border:0;" alt="SANS icon" align="right"/>
 
 **Symmetric Alignment-free phylogeNomic Splits**  
 ***--- phylogenomics with Abundance-filter, Multi-threading and Bootstrapping on Amino-acid or GEnomic Sequences***
@@ -7,12 +7,10 @@
 * Alignment-free
 * Input: assembled genomes / reads, or coding sequences / amino acid sequences
 * Output: phylogenetic splits or tree
-* **NEW:** Abundance-filter
-* **NEW:** Bootstrapping
-* **NEW:** Multi-threading
-* **NEW:** Labeled PDF and Nexus output
-* **NEW:** Better performance by handling singleton k-mers separately
-* **NEW:** Output core k-mers
+* Features: abundance-filter, bootstrapping, multi-threading, labeled PDF and Nexus output
+
+<img src="clowm.svg" style="border:0;" alt="CloWM icon" width="32" height="32"/>  **NEW**: Launch SANS on [CloWM](https://clowm.bi.denbi.de/workflows/0194b78f-9696-7402-a2b8-858508733618/) (just using your [LifeScience](https://lifescience-ri.eu/) account).
+
 
 ### Dos and Don'ts
 
@@ -49,7 +47,7 @@ In: Huber, K. and Gusfield, D. (eds.) Proceedings of WABI 2019. LIPIcs. 143, Sch
 
 ## Requirements
 
-For the main program, there are no strict dependencies other than C++ version 14.  
+For the main program, there are no strict dependencies other than C++ version 17.
 To read in **compressed** fasta/fastq files, it could be necessary to install zlib:
 ```
 sudo apt install libz-dev
@@ -129,6 +127,7 @@ Specify your input by `-i <list>` where `<list>` is either a file-of-files or in
 If you want a **tree**, use `-f strict`. In this case, `-N <newick-file>` can be used to write the resulting tree into a newick file; instead or additionally to `-o <split-file>`.
 If you want a **network**, use one of the following filters:
 * `weakly`: a split is kept if it is weakly compatible to all previously filtered splits (see publication for definition of "weak compatibility").
+* `planar`: a split is kept if the resulting set of splits can be displayed in the plain without any edges crossing (a.k.a. circular compatible, outer-labeled planar)
 * `2-tree`: two sets of compatible splits (=trees) are maintained. A split is added to the first if possible (compatible); if not to the second if possible.
   `3-tree`: three sets of compatible splits (=trees) are maintained. A split is added to the first if possible (compatible); if not to the second if possible; if not to the third if possible.
 
@@ -348,6 +347,7 @@ SANS is provided as a service of the [German Network for Bioinformatics Infrastr
 
 * The sparse-map library is licensed under the [MIT license](https://github.com/Tessil/sparse-map/blob/master/LICENSE).
 * The Bifrost library is licensed under the [BSD-2 license](https://github.com/pmelsted/bifrost/blob/master/LICENSE).
+* The [PC-tree library](https://github.com/N-Coder/pc-tree) is licensed under the [OGDF license](https://github.com/N-Coder/pc-tree/blob/main/LICENSE.txt).
 * SANS uses gzstream, licensed under the [LGPL license](/src/gz/COPYING.LIB).
 * SANS is licensed under the [GNU general public license](/LICENSE).
 

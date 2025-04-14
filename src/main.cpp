@@ -60,9 +60,15 @@ int main(int argc, char* argv[]) {
         cout << "                 \t Requires SplitsTree in the PATH" << endl;
         cout << "                 \t Warning: Already existing files will be overwritten" << endl;
         cout << endl;
+        cout << "    -S, --svg  \t\t Output network as SVG file" << endl;
+        cout << "                 \t Requires SplitsTree in the PATH" << endl;
+        cout << "                 \t Warning: Already existing files will be overwritten" << endl;
+        cout << endl;
         cout << "    -r, --core  \t Output core k-mers in fasta file" << endl;
         cout << endl;
-        cout << "    (at least --output, --newick, --nexus, --pdf, or --core must be provided)" << endl;
+        cout << "    -R, --raw  \t Output both counts per split in TSV file" << endl;
+        cout << endl;
+        cout << "    (at least --output, --newick, --nexus, --pdf, --svg, --core, or --raw must be provided)" << endl;
         cout << endl;
         cout << "  Optional arguments:" << endl;
         cout << endl;
@@ -84,6 +90,8 @@ int main(int argc, char* argv[]) {
         // cout << "                  \t filtered splits w.r.t. original splits" << endl;
         cout << "                  \t options: strict: compatible to a tree" << endl;
         cout << "                  \t          weakly: weakly compatible network" << endl;
+        cout << "                  \t          planar: compatible to a planar graph" << endl;
+        cout << "                  \t                  (a.k.a. circular compatible, outer labeled planar)" << endl;
         cout << "                  \t          n-tree: compatible to a union of n trees" << endl;
         cout << "                  \t                  (where n is an arbitrary number, e.g. 2-tree)" << endl;
         cout << endl;
@@ -155,7 +163,9 @@ int main(int argc, char* argv[]) {
     string newick;    // name of newick output file // Todo
     string nexus;   // name of nexus output file
     string pdf;     // name of PDF output file
+    string svg;     // name of SVG output file
     string core;     // name of file for core k-mers
+    string raw;  // name of file for raw count output
     string groups; // name of input file giving groups
     string coloring; // name of input file for using specified color
     string translate; // name of translate file
@@ -197,15 +207,18 @@ int main(int argc, char* argv[]) {
     string consensus_filter; // filter function for filtering after bootstrapping
 	uint32_t bootstrap_no=0; // = no bootstrapping
 	float bootstrap_threshold=0; // threshold to filter low support splits
+	hash_map<color_t, uint32_t> support_values; // hash_map for each original split with zero counts
 
     // qol
     bool verbose = false;    // print messages during execution
 	chrono::high_resolution_clock::time_point end;
 
-    // simple nexus, colored nexus, pdf
+    // simple nexus, colored nexus, pdf, svg
     bool nexus_wanted = false;
     bool c_nexus_wanted = false;
     bool pdf_wanted = false;
+    bool svg_wanted = false;
+	bool raw_wanted = false;
 	
 	/**
 	* Look-up set for k-mers that are ignored, i.e., not stored, counted etc.
@@ -305,6 +318,15 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        else if (strcmp(argv[i], "-R") == 0 || strcmp(argv[i], "--raw") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            raw = argv[++i];    // tsv output file for raw counts
+            raw_wanted = true;
+            if (!util::path_exist(raw)){
+                cerr << "Error: output folder does not exist: "<< raw << endl;
+                return 1;
+            }
+        }
         else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--label") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             c_nexus_wanted = true;
@@ -376,7 +398,7 @@ int main(int argc, char* argv[]) {
         else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--filter") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             filter = argv[++i];    // Filter a greedy maximum weight subset
-            if (filter == "strict" || filter == "tree") {
+            if (filter == "strict" || filter == "tree" | filter == "planar") {
                 // compatible to a tree
             }
             else if (filter == "weakly") {
@@ -420,7 +442,16 @@ int main(int argc, char* argv[]) {
             pdf = argv[++i];    // PDF output file
             pdf_wanted = true;    // Output of tree as pdf
             if (!util::path_exist(pdf)){
-                cerr << "Error: output folder does not exist: "<< nexus << endl;
+                cerr << "Error: output folder does not exist: "<< pdf << endl;
+                return 1;
+            }
+        }
+        else if (strcmp(argv[i], "-S") == 0 || strcmp(argv[i], "--svg") == 0) {
+            catch_missing_dependent_args(argv[i + 1], argv[i]);
+            svg = argv[++i];    // SVG output file
+            svg_wanted = true;    // Output of tree as svg
+            if (!util::path_exist(svg)){
+                cerr << "Error: output folder does not exist: "<< svg << endl;
                 return 1;
             }
         }
@@ -469,7 +500,7 @@ int main(int argc, char* argv[]) {
             }
         }
         // bootsrapping
-        else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0) {
+        else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--bootstrapping") == 0 || strcmp(argv[i], "--bootstrap") == 0) {
             catch_missing_dependent_args(argv[i + 1], argv[i]);
             catch_failed_stoi_cast(argv[i + 1], argv[i]);
             bootstrap_no = stoi(argv[++i]);
@@ -592,11 +623,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && core.empty()) {
-        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name> or --pdf <file_name> or --core <file_name>" << endl;
+    if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && svg.empty() && core.empty() && !raw_wanted) {
+        cerr << "Error: missing argument: --output <file_name> or --newick <file_name> or --nexus <file_name> or --pdf <file_name> or --svg <file_name> or --core <file_name> or --raw <file_name>" << endl;
         return 1;
     }
-	if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && !core.empty()) {
+	if (output.empty() && newick.empty() && nexus.empty() && pdf.empty() && svg.empty() && !core.empty()) {
 		if(!filter.empty() || !consensus_filter.empty() || bootstrap_no>0 || mean != util::geometric_mean2 || top!=-1 ){
 			cerr << "Warning: No output option for a phylogeny given. Only core k-mers are computed. Some given arguments only make sense for phylogeny construction and are redundant." << endl;
 		}
@@ -622,8 +653,8 @@ int main(int argc, char* argv[]) {
         cerr << "Error: Newick output only applicable in combination with -C strict or -C n-tree." << endl;
         return 1;
     }
-    if (c_nexus_wanted && !nexus_wanted && !pdf_wanted){
-        cerr << "Error: Labeled (colored) nexus output only applicable in combination with -X <filename> or -p <filename>." << endl;
+    if (c_nexus_wanted && !nexus_wanted && !pdf_wanted && !svg_wanted){
+        cerr << "Error: Labeled (colored) nexus output only applicable in combination with --nexus <filename> or --pdf <filename> or --svg <filename>." << endl;
         return 1;
     }
     if (c_nexus_wanted || pdf_wanted){
@@ -1358,7 +1389,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 	
 
 	// if only core-kmers are asked for, no further processing necessary
-	if (!output.empty() || !newick.empty() || !nexus.empty() || !pdf.empty()){ 
+	if (!output.empty() || !newick.empty() || !nexus.empty() || !pdf.empty() || !svg.empty() || raw_wanted){ 
 	
 		/*
 		* [graph processing]
@@ -1389,11 +1420,14 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		}
 
 
+		
+		
 
 		/* [split processing]
 		* - compute the splits
 		*/ 
 
+	
 		if (verbose) {
 			cout << "Compile split list..."  << flush;
 		}
@@ -1408,8 +1442,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		* [bootstrap handling]
 		*/
 
-		// for bootstrapping: hash_map for each original split with zero counts
-		hash_map<color_t, uint32_t> support_values;
+
 		if(bootstrap_no==0){ // if bootstrapping -> no initial filtering
 			
 			// NO BOOTSTRAPPING
@@ -1540,8 +1573,11 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			cout << "Writing output..." << endl << flush;
 		}
 
-		ofstream file(output);    // output file stream
+		ofstream file;    // output file stream
 		ostream stream(file.rdbuf());
+		if (!output.empty()){
+			file.open(output);
+		}
 
 		ofstream file_bootstrap;
 		ostream stream_bootstrap(file_bootstrap.rdbuf());
@@ -1552,9 +1588,20 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 		ofstream file_nexus; // output for nexus file
 		ostream stream_nexus(file_nexus.rdbuf());
 
-		if(nexus_wanted || pdf_wanted){
+		ofstream file_raw;    // output for raw counts
+		ostream stream_raw(file_raw.rdbuf());
+		if(!raw.empty()){
+			file_raw.open(raw);
+		}
+		
+		if(nexus_wanted || pdf_wanted || svg_wanted){
 			if(nexus.empty()){ // temporarily name nexus file to create pdf with it
-				nexus = pdf + ".nex";
+				if (!pdf.empty()){
+					nexus = pdf + ".nex";
+				}else {
+					nexus = svg + ".nex";
+				}
+				
 			}
 			file_nexus.open(nexus);
 			// nexus format stuff
@@ -1581,7 +1628,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 		for (auto& split : graph::split_list) {
 
-			if(nexus_wanted || pdf_wanted){ // nexus
+			if(nexus_wanted || pdf_wanted || svg_wanted){ // nexus
 				++split_num;
 				split_size = 0; // reset split size
 				split_comp = ""; // reset split components
@@ -1590,21 +1637,32 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			double weight = split.first;
 			split_color = split.second;
 		// cleanliness.setSmallestWeight(weight, split.second);
-			stream << weight;    // weight of the split
+			if (!output.empty()){
+				stream << weight;    // weight of the split
+			}
 			if (bootstrap_no>0) {
 				stream_bootstrap << ((1.0 * support_values[split.second]) / bootstrap_no);
 				// stream_bootstrap << support_values[split.second];
+			}
+			if (raw_wanted){
+				array<uint32_t,2> weights = graph::color_table[split_color];
+				stream_raw << weights[0] << '\t' << weights[1];
 			}
 			for (uint64_t i = 0; i < num; ++i) {
 
 				if (split_color.test(pos)) {
 					if (i < denom_names.size()) {
-						stream << '\t' << denom_names[i]; // name of the file
+						if (!output.empty()){
+							stream << '\t' << denom_names[i]; // name of the file
+						}
 						if (bootstrap_no > 0) {
 							stream_bootstrap << '\t' << denom_names[i]; // name of the file
 						}
+						if (raw_wanted){
+							stream_raw << '\t' << denom_names[i];
+						}
 
-						if(nexus_wanted || pdf_wanted){ // nexus
+						if(nexus_wanted || pdf_wanted || svg_wanted){ // nexus
 							++split_size;
 							if(split_size > 1) split_comp += " "; // " " only if not first value
 							split_comp += to_string(i+1);
@@ -1615,7 +1673,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 				split_color >>= 01u;
 			}
 
-			if(nexus_wanted || pdf_wanted){
+			if(nexus_wanted || pdf_wanted || svg_wanted){
 				if(bootstrap_no>0){ // Adding bootstrap values
 					stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t";
 					stream_nexus << weight << "\t" << ((1.0 * support_values[split.second]) / bootstrap_no) << "\t" << split_comp << ",";
@@ -1623,14 +1681,18 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 					stream_nexus << "\n[" << split_num << ", size=" << split_size << "]\t" << weight << "\t" << split_comp << ",";
 				}
 			}
-
-			stream << endl;
+			if (!output.empty()){
+				stream << endl;
+			}
 			if(bootstrap_no>0){
 				stream_bootstrap<<endl;
 			}
+			if(raw_wanted){
+				stream_raw<<endl;
+			}
 		}
 
-		if (nexus_wanted || pdf_wanted){ // nexus
+		if (nexus_wanted || pdf_wanted || svg_wanted){ // nexus
 			stream_nexus << "\n;\nEND; [Splits]\n";
 			// filter = strict (=greedy),  weakly (=greedyWC), tree (=?greedy)
 			string fltr = "none"; // filter used for SplitsTree
@@ -1640,11 +1702,16 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 		//cleanliness.calculateWeightBeforeCounter();
 
-		file.close();
+		if (!output.empty()){
+			file.close();
+		}
 		if(bootstrap_no>0){
 			file_bootstrap.close();
 		}
-		if(nexus_wanted || pdf_wanted){
+		if(raw_wanted){
+			file_raw.close();
+		}
+		if(nexus_wanted || pdf_wanted || svg_wanted){
 			file_nexus.close();
 			// naming modified nexus output file
 			//string modded_file = nexus_color::modify_filename(nexus, "labeled_");
@@ -1653,19 +1720,15 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 
 			if(c_nexus_wanted){
 				// use scaled file to open, mod and save in SplitsTree
-				//nexus_color::open_in_splitstree(nexus, pdf, verbose, true, modded_file);
-				nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
+				nexus_color::open_in_splitstree(nexus, pdf, svg, verbose, true, nexus);
 
 				if(verbose) cout << "Adding color..." << endl << flush;
-				//nexus_color::color_nexus(modded_file, groups, coloring);
 				nexus_color::color_nexus(nexus, groups, coloring);
-				if(pdf_wanted){
-					//nexus_color::open_in_splitstree(modded_file, pdf, verbose, false);
-					nexus_color::open_in_splitstree(nexus, pdf, verbose, false);
+				if(pdf_wanted || svg_wanted){
+					nexus_color::open_in_splitstree(nexus, pdf, svg, verbose, false);
 				}
-			} else if(pdf_wanted){
-				//nexus_color::open_in_splitstree(nexus, pdf, verbose); // not saving (via SplitsTree) network to file
-				nexus_color::open_in_splitstree(nexus, pdf, verbose, true, nexus);
+			} else if(pdf_wanted || svg_wanted){
+				nexus_color::open_in_splitstree(nexus, pdf, svg, verbose, true, nexus);
 			}
 
 			// Delete nexus file if only pdf wanted
@@ -1675,6 +1738,7 @@ double min_value = numeric_limits<double>::min(); // current minimal weight repr
 			}
 		}
 	}
+
 
 // time measurement
     if (verbose) {
@@ -1720,6 +1784,9 @@ void apply_filter(string filter, string newick, std::function<string(const uint6
 			else if (filter == "weakly") {
 				graph::filter_weakly(split_list, verbose);
 			}
+            else if (filter == "planar") {
+                graph::filter_planar(split_list, verbose);
+            }
 			else if (filter.find("tree") != -1 && filter.substr(filter.find("tree")) == "tree") {
 				if (!newick.empty()) {
 					ofstream file(newick);    // output file stream

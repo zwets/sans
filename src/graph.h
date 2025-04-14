@@ -149,10 +149,6 @@ private:
      */
     static vector<hash_map<kmerAmino_t, color_t>> kmer_tableAmino;
 
-    /**
-     * This is a hash table mapping colors to weights [O(1)].
-     */
-    static hash_map<color_t, array<uint32_t,2>> color_table;
 
     /**
      * This is a hash set used to filter k-mers for coverage (q > 1).
@@ -188,6 +184,11 @@ public:
     static multimap_<double, color_t> split_list;
 
     /**
+     * This is a hash table mapping colors to weights [O(1)].
+     */
+    static hash_map<color_t, array<uint32_t,2>> color_table;
+
+	/**
     * These are the allowed chars.
     */
     static vector<char> allowedChars;
@@ -454,6 +455,14 @@ public:
      * @param verbose print progress
      */
     static void filter_weakly(multimap_<double, color_t>& split_list, bool& verbose);
+
+    /**
+     * This function filters a planar graph compatible subset.
+     * @param split_list list of splits to be filtered
+     * @param verbose print progress
+     */
+    static void filter_planar(multimap_<double, color_t>& split_list, bool& verbose);
+
 
     /**
      * This function filters a greedy maximum weight n-tree compatible subset.
